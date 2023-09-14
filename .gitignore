@@ -1,0 +1,24 @@
+# Ignora la carpeta node_modules
+node_modules/
+
+# Ignora el archivo .env en caso de que contengas claves secretas o configuración
+.env
+
+# Ignora la carpeta .vscode si estás usando Visual Studio Code
+.vscode/
+
+# Archivos de log
+*.log
+
+# Directorios de logs
+logs
+
+# Ignora archivos de depuración
+*.pid
+*.seed
+
+# Archivos temporales
+*.tmp
+
+# Otros archivos y directorios que podrías desear ignorar dependiendo de tus herramientas o configuración
+Thumbs.db  # Para usuarios de Windows
