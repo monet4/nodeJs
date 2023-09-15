@@ -79,6 +79,23 @@ app.delete('/obras/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+//Proveedores por obra
+app.get('/obras/:idObra/proveedores', async (req, res) => {
+    const idObra = req.params.idObra;
+    try {
+        const query = `
+            SELECT proveedores.* 
+            FROM proveedores 
+            JOIN proveedores_obras ON proveedores.idProveedor = proveedores_obras.proveedor_id 
+            WHERE proveedores_obras.obra_id = ?;
+        `;
+
+        const [results] = await db.query(query, [idObra]);
+        res.json(results);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Obtener todos los proveedores
 app.get('/proveedores', async (req, res) => {
