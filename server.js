@@ -9,31 +9,33 @@ const path = require('path');
 // Create an Express app
 const app = express();
 
-// Middleware setup
-app.use(cors()); // This allows for cross-origin requests
-app.use(bodyParser.json()); // Parse JSON request body
-app.use(bodyParser.urlencoded({ extended: true })); // Parse x-www-form-urlencoded request body
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // MySQL Database Connection
-const db = mysql.createConnection({
-    host: 'servergop.mysql.database.azure.com', // Your Azure MySQL host URL
-    user: 'boss', // Your Azure MySQL user
-    password: 'Server@spb.cat', // Your Azure MySQL password
-    database: 'appmovil', // Your Azure MySQL database name
-    ssl: {
-        ca: fs.readFileSync(path.join(__dirname, 'DigiCertGlobalRootCA.crt.pem'))
+let db;
 
-    }
-});
+(async () => {
+    try {
+        db = await mysql.createConnection({
+            host: 'servergop.mysql.database.azure.com',
+            user: 'boss',
+            password: 'Server@spb.cat',
+            database: 'appmovil',
+            ssl: {
+                ca: fs.readFileSync(path.join(__dirname, 'DigiCertGlobalRootCA.crt.pem'))
+            }
+        });
 
-// Connect to MySQL database
-db.connect(err => {
-    if (err) {
+        // Verifica la conexión
+        const [results] = await db.query('SELECT 1');
+        console.log('Connected to MySQL:', results);
+    } catch (err) {
         console.error('Error connecting to MySQL:', err.stack);
         return;
     }
-    console.log('Connected to MySQL as thread id:', db.threadId);
-});
+})();
 
 // Simple route for testing
 app.get('/', (req, res) => {
