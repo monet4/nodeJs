@@ -84,7 +84,7 @@ app.get('/obras/:idObra/proveedores', async (req, res) => {
     const idObra = req.params.idObra;
     try {
         const query = `
-            SELECT proveedores.* 
+            SELECT proveedores.idProveedor, proveedores.proveedor, proveedores_obras.obra_id as obraId 
             FROM proveedores 
             JOIN proveedores_obras ON proveedores.idProveedor = proveedores_obras.proveedor_id 
             WHERE proveedores_obras.obra_id = ?;
