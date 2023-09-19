@@ -1,13 +1,22 @@
-// Required modules
-const express = require('express');
-const bodyParser = require('body-parser');
-const mysql = require('mysql2/promise');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-
-// Create an Express app
-const app = express();
+    // Required modules
+    const express = require('express');
+    const bodyParser = require('body-parser');
+    const mysql = require('mysql2/promise');
+    const cors = require('cors');
+    const fs = require('fs');
+    const path = require('path');
+    const multer = require('multer');
+    const { BlobServiceClient } = require('@azure/storage-blob');
+    
+    const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+    const containerName = "appalbaran"; 
+    const decodedCert = Buffer.from(process.env.DB_SSL_CA_BASE64, 'base64');
+    const storage = multer.memoryStorage();
+    const upload = multer({ storage: storage });
+    
+    // Create an Express app
+    const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -19,12 +28,12 @@ let db;
 (async () => {
     try {
         db = await mysql.createConnection({
-            host: 'servergop.mysql.database.azure.com',
-            user: 'boss',
-            password: 'Server@spb.cat',
-            database: 'appmovil',
+            host: process.env.DB_HOST, 
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME, 
             ssl: {
-                ca: fs.readFileSync(path.join(__dirname, 'DigiCertGlobalRootCA.crt.pem'))
+                ca: decodedCert
             }
         });
 
@@ -63,7 +72,13 @@ app.post('/obras', async (req, res) => {
     const { nombre } = req.body;
     try {
         const [result] = await db.query('INSERT INTO obras (nombre) VALUES (?)', [nombre]);
-        res.json({ id: result.insertId });
+        
+        // Crear un contenedor para la obra en Azure Blob Storage
+        const obraID = result.insertId;
+        const containerClient = blobServiceClient.getContainerClient(`obra${obraID}`);
+        await containerClient.create();
+        
+        res.json({ id: obraID });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -224,6 +239,53 @@ app.delete('/usuarios/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Subida de imágenes y almacenamiento en la base de datos
+app.post('/uploadImage/:obraID/:proveedorID', upload.single('image'), async (req, res) => {
+    try {
+        const obraID = req.params.obraID;
+        const proveedorID = req.params.proveedorID;
+
+        const uniqueImageID = Date.now();
+        
+        // Simulando subcarpeta para el proveedor con el esquema `obraID/proveedorID_nombreimagen.jpg`
+        const blobName = `${obraID}/${proveedorID}_${uniqueImageID}.jpg`;
+
+        const containerClient = blobServiceClient.getContainerClient(`obra${obraID}`);
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+        await blockBlobClient.uploadData(req.file.buffer);
+
+        const blobUrl = blockBlobClient.url;
+
+        const [result] = await db.query("INSERT INTO imagenes (url, proveedorId, obraId) VALUES (?, ?, ?)", [blobUrl, proveedorID, obraID]);
+
+        if (result.affectedRows > 0) {
+            res.send("Imagen subida y URL almacenada correctamente");
+        } else {
+            res.status(500).send("Error al almacenar la URL en la base de datos");
+        }
+    } catch (error) {
+        res.status(500).send(`Error: ${error.message}`);
+    }
+});
+
+    
+
+app.get('/getImages/:obraID/:proveedorID', async (req, res) => {
+    try {
+        const obraID = req.params.obraID;
+        const proveedorID = req.params.proveedorID;
+
+        // Consulta a tu base de datos para obtener las URL de las imágenes asociadas con esta obra y proveedor
+        const [images] = await db.query("SELECT url FROM imagenes WHERE obraId = ? AND proveedorId = ?", [obraID, proveedorID]);
+
+        res.json(images);
+    } catch (error) {
+        res.status(500).send(`Error: ${error.message}`);
+    }
+});
+
 
 
 
