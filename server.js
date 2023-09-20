@@ -33,6 +33,7 @@ let pool;
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME, 
         waitForConnections: true,
+        connectTimeout: 10000,
         connectionLimit: 15,
         queueLimit: 0,
         ssl: {
@@ -59,7 +60,12 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
+function timeout(req, res, next) {
+   res.setTimeout(10000, function() { // 10 seconds
+       res.status(408).send('Request timed out.');
+   });
+   next();
+};
 // Graceful Shutdown
 process.on('SIGTERM', async () => {
     console.log('SIGTERM signal received. Preparing for graceful shutdown...');
@@ -83,7 +89,7 @@ process.on('SIGTERM', async () => {
 });
 
 // Obtener todas las obras
-app.get('/obras', async (req, res) => {
+app.get('/obras', timeout, async (req, res) => {
     try {
         const [results] = await pool.query('SELECT * FROM obras');
         res.json(results);
@@ -93,7 +99,7 @@ app.get('/obras', async (req, res) => {
 });
 
 // Insertar una nueva obra
-app.post('/obras', async (req, res) => {
+app.post('/obras',timeout ,async (req, res) => {
     const { nombre } = req.body;
     try {
         const [result] = await pool.query('INSERT INTO obras (nombre) VALUES (?)', [nombre]);
@@ -110,7 +116,7 @@ app.post('/obras', async (req, res) => {
 });
 
 // Borrar una obra
-app.delete('/obras/:id', async (req, res) => {
+app.delete('/obras/:id',timeout, async (req, res) => {
     const idObra = req.params.id;
     try {
         await pool.query('DELETE FROM obras WHERE idObra = ?', [idObra]);
@@ -120,7 +126,7 @@ app.delete('/obras/:id', async (req, res) => {
     }
 });
 //Proveedores por obra
-app.get('/obras/:idObra/proveedores', async (req, res) => {
+app.get('/obras/:idObra/proveedores',timeout, async (req, res) => {
     const idObra = req.params.idObra;
     try {
         const query = `
@@ -138,7 +144,7 @@ app.get('/obras/:idObra/proveedores', async (req, res) => {
 });
 
 // Obtener todos los proveedores
-app.get('/proveedores', async (req, res) => {
+app.get('/proveedores',timeout, async (req, res) => {
     try {
         const [results] = await pool.query('SELECT * FROM proveedores');
         res.json(results);
@@ -148,7 +154,7 @@ app.get('/proveedores', async (req, res) => {
 });
 
 // Insertar un nuevo proveedor
-app.post('/proveedores', async (req, res) => {
+app.post('/proveedores',timeout, async (req, res) => {
     const { proveedor } = req.body;
     try {
         const [result] = await pool.query('INSERT INTO proveedores (proveedor) VALUES (?)', [proveedor]);
@@ -159,7 +165,7 @@ app.post('/proveedores', async (req, res) => {
 });
 
 // Borrar un proveedor
-app.delete('/proveedores/:id', async (req, res) => {
+app.delete('/proveedores/:id',timeout, async (req, res) => {
     const idProveedor = req.params.id;
     try {
         await pool.query('DELETE FROM proveedores WHERE idProveedor = ?', [idProveedor]);
@@ -170,7 +176,7 @@ app.delete('/proveedores/:id', async (req, res) => {
 });
 
 // Obtener todas las imágenes
-app.get('/imagenes', async (req, res) => {
+app.get('/imagenes',timeout, async (req, res) => {
     try {
         const [results] = await pool.query('SELECT * FROM imagenes');
         res.json(results);
@@ -180,7 +186,7 @@ app.get('/imagenes', async (req, res) => {
 });
 
 // Insertar una nueva imagen
-app.post('/imagenes', async (req, res) => {
+app.post('/imagenes',timeout, async (req, res) => {
     const { url, proveedorId, obraId } = req.body;
     try {
         const [result] = await pool.query('INSERT INTO imagenes (url, proveedorId, obraId) VALUES (?, ?, ?)', [url, proveedorId, obraId]);
@@ -191,7 +197,7 @@ app.post('/imagenes', async (req, res) => {
 });
 
 // Borrar una imagen
-app.delete('/imagenes/:id', async (req, res) => {
+app.delete('/imagenes/:id',timeout, async (req, res) => {
     const imagenId = req.params.id;
     try {
         await pool.query('DELETE FROM imagenes WHERE imagenId = ?', [imagenId]);
@@ -202,7 +208,7 @@ app.delete('/imagenes/:id', async (req, res) => {
 });
 
 // Obtener todos los registros de proveedores_obras
-app.get('/proveedores_obras', async (req, res) => {
+app.get('/proveedores_obras',timeout, async (req, res) => {
     try {
         const [results] = await pool.query('SELECT * FROM proveedores_obras');
         res.json(results);
@@ -212,7 +218,7 @@ app.get('/proveedores_obras', async (req, res) => {
 });
 
 // Insertar un nuevo registro en proveedores_obras
-app.post('/proveedores_obras', async (req, res) => {
+app.post('/proveedores_obras',timeout, async (req, res) => {
     const { proveedor_id, obra_id } = req.body;
     try {
         const [result] = await pool.query('INSERT INTO proveedores_obras (proveedor_id, obra_id) VALUES (?, ?)', [proveedor_id, obra_id]);
@@ -223,7 +229,7 @@ app.post('/proveedores_obras', async (req, res) => {
 });
 
 // Borrar un registro de proveedores_obras
-app.delete('/proveedores_obras/:id', async (req, res) => {
+app.delete('/proveedores_obras/:id',timeout, async (req, res) => {
     const proveedor_obra_id = req.params.id;
     try {
         await pool.query('DELETE FROM proveedores_obras WHERE proveedor_obra_id = ?', [proveedor_obra_id]);
@@ -234,7 +240,7 @@ app.delete('/proveedores_obras/:id', async (req, res) => {
 });
 
 // Obtener todos los usuarios
-app.get('/usuarios', async (req, res) => {
+app.get('/usuarios',timeout, async (req, res) => {
     try {
         const [results] = await pool.query('SELECT * FROM usuarios');
         res.json(results);
@@ -244,7 +250,7 @@ app.get('/usuarios', async (req, res) => {
 });
 
 // Insertar un nuevo usuario
-app.post('/usuarios', async (req, res) => {
+app.post('/usuarios',timeout, async (req, res) => {
     const { nombre, apellido, usuario, contrasena, mail } = req.body;
     try {
         const [result] = await pool.query('INSERT INTO usuarios (nombre, apellido, usuario, contrasena, mail) VALUES (?, ?, ?, ?, ?)', [nombre, apellido, usuario, contrasena, mail]);
@@ -255,7 +261,7 @@ app.post('/usuarios', async (req, res) => {
 });
 
 // Borrar un usuario
-app.delete('/usuarios/:id', async (req, res) => {
+app.delete('/usuarios/:id',timeout, async (req, res) => {
     const idUsuario = req.params.id;
     try {
         await pool.query('DELETE FROM usuarios WHERE idUsuario = ?', [idUsuario]);
@@ -266,7 +272,7 @@ app.delete('/usuarios/:id', async (req, res) => {
 });
 
 // Subida de imágenes y almacenamiento en la base de datos
-app.post('/uploadImage/:obraID/:proveedorID', upload.single('image'), async (req, res) => {
+app.post('/uploadImage/:obraID/:proveedorID',timeout, upload.single('image'), async (req, res) => {
     try {
         const obraID = req.params.obraID;
         const proveedorID = req.params.proveedorID;
@@ -297,7 +303,7 @@ app.post('/uploadImage/:obraID/:proveedorID', upload.single('image'), async (req
 
     
 
-app.get('/getImages/:obraID/:proveedorID', async (req, res) => {
+app.get('/getImages/:obraID/:proveedorID',timeout, async (req, res) => {
     try {
         const obraID = req.params.obraID;
         const proveedorID = req.params.proveedorID;
