@@ -54,12 +54,6 @@ let pool;
 app.get('/', (req, res) => {
    const responseObj = {
         message: 'Hello from the server!',
-        dbHost: process.env.DB_HOST,
-        dbUser: process.env.DB_USER,
-        dbPassword: process.env.DB_PASSWORD,
-        dbName: process.env.DB_DATABASE,
-        decodedCert: decodedCert.toString(),
-        azure:process.env.AZURE_BLOB_STORAGE
     };
     res.json(responseObj);
     });
