@@ -52,14 +52,23 @@ let pool;
 
 // Simple route for testing
 app.get('/', (req, res) => {
-    res.send('Hello from the server!');
-});
+   const responseObj = {
+        message: 'Hello from the server!',
+        dbHost: process.env.DB_HOST,
+        dbUser: process.env.DB_USER,
+        dbPassword: process.env.DB_PASSWORD,
+        dbName: process.env.DB_DATABASE,
+        decodedCert: decodedCert.toString(),
+        azure:process.env.AZURE_BLOB_STORAGE
+    };
+    res.json(responseObj);
+    });
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-});
+    });
 function timeout(req, res, next) {
    res.setTimeout(10000, function() { // 10 seconds
        res.status(408).send('Request timed out.');
