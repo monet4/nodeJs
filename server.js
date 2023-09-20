@@ -8,7 +8,7 @@
     const multer = require('multer');
     const { BlobServiceClient } = require('@azure/storage-blob');
     
-    const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_BLOB_STORAGE;
     const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
     const containerName = "appalbaran"; 
     const decodedCert = Buffer.from(process.env.DB_SSL_CA_BASE64, 'base64');
@@ -31,7 +31,7 @@ let pool;
         host: process.env.DB_HOST, 
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME, 
+        database: process.env.DB_DATABASE, 
         waitForConnections: true,
         connectTimeout: 10000,
         connectionLimit: 15,
