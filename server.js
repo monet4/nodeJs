@@ -290,7 +290,7 @@ app.post('/uploadImage/:obraID/:proveedorID', timeout, upload.single('image'), a
     try {
         const blobName = `${proveedorID}_${Date.now()}.jpg`;
 
-        const containerClient = blobServiceClient.getContainerClient(`obra${obraID}`);
+        const containerClient = blobServiceClient.getContainerClient(`${obraID}`);
         if (!(await containerClient.exists())) {
             await containerClient.create();
         }
