@@ -10,7 +10,6 @@
     
     const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_BLOB_STORAGE;
     const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
-    const containerName = "appalbaran"; 
     const decodedCert = Buffer.from(process.env.DB_SSL_CA_BASE64, 'base64');
     const storage = multer.memoryStorage();
     const upload = multer({ storage: storage });
@@ -275,21 +274,30 @@ app.delete('/usuarios/:id',timeout, async (req, res) => {
 });
 
 // Subida de imágenes y almacenamiento en la base de datos
-app.post('/uploadImage/:obraID/:proveedorID',timeout, upload.single('image'), async (req, res) => {
-    try {
-        const obraID = req.params.obraID;
-        const proveedorID = req.params.proveedorID;
+app.post('/uploadImage/:obraID/:proveedorID', timeout, upload.single('image'), async (req, res) => {
+    
+    if (!req.file || !req.file.buffer) {
+        return res.status(400).send('No se proporcionó una imagen válida.');
+    }
 
-        const uniqueImageID = Date.now();
-        
-        // Simulando subcarpeta para el proveedor con el esquema `obraID/proveedorID_nombreimagen.jpg`
-        const blobName = `${obraID}/${proveedorID}_${uniqueImageID}.jpg`;
+    const obraID = parseInt(req.params.obraID, 10);
+    const proveedorID = parseInt(req.params.proveedorID, 10);
+    
+    if (isNaN(obraID) || isNaN(proveedorID)) {
+        return res.status(400).send('obraID o proveedorID no son válidos.');
+    }
+
+    try {
+        const blobName = `${proveedorID}_${Date.now()}.jpg`;
 
         const containerClient = blobServiceClient.getContainerClient(`obra${obraID}`);
+        if (!(await containerClient.exists())) {
+            await containerClient.create();
+        }
+
         const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-
         await blockBlobClient.uploadData(req.file.buffer);
-
+        
         const blobUrl = blockBlobClient.url;
 
         const [result] = await pool.query("INSERT INTO imagenes (url, proveedorId, obraId) VALUES (?, ?, ?)", [blobUrl, proveedorID, obraID]);
@@ -304,14 +312,11 @@ app.post('/uploadImage/:obraID/:proveedorID',timeout, upload.single('image'), as
     }
 });
 
-    
-
-app.get('/getImages/:obraID/:proveedorID',timeout, async (req, res) => {
+app.get('/getImages/:obraID/:proveedorID', timeout, async (req, res) => {
     try {
         const obraID = req.params.obraID;
         const proveedorID = req.params.proveedorID;
 
-        // Consulta a tu base de datos para obtener las URL de las imágenes asociadas con esta obra y proveedor
         const [images] = await pool.query("SELECT url FROM imagenes WHERE obraId = ? AND proveedorId = ?", [obraID, proveedorID]);
 
         res.json(images);
@@ -319,6 +324,7 @@ app.get('/getImages/:obraID/:proveedorID',timeout, async (req, res) => {
         res.status(500).send(`Error: ${error.message}`);
     }
 });
+
 
 
 
