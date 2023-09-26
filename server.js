@@ -359,7 +359,7 @@ app.post('/send-email', async (req, res) => {
             service: 'gmail',
             auth: {
                 user: 'raimon.boixereu@spb.cat', 
-                pass: process.env.PASSORD_MAIL_SERVICE
+                pass: process.env.PASSWORD_MAIL_SERVICE
             }
         });
 
