@@ -6,6 +6,8 @@
     const fs = require('fs');
     const path = require('path');
     const multer = require('multer');
+    const nodemailer = require('nodemailer');
+
     const { BlobServiceClient } = require('@azure/storage-blob');
     
     const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_BLOB_STORAGE;
@@ -262,6 +264,21 @@ app.post('/usuarios',timeout, async (req, res) => {
     }
 });
 
+// ValidarUsuario
+app.get('/usuarios/validar', timeout, async (req, res) => {
+    const { usuario, contrasena } = req.query;
+    try {
+        const [results] = await pool.query('SELECT * FROM usuarios WHERE usuario = ? AND contrasena = ?', [usuario, contrasena]);
+        if (results.length > 0) {
+            res.json({ valid: true, usuario: results[0] });
+        } else {
+            res.json({ valid: false });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Borrar un usuario
 app.delete('/usuarios/:id',timeout, async (req, res) => {
     const idUsuario = req.params.id;
@@ -325,6 +342,42 @@ app.get('/getImages/:obraID/:proveedorID', timeout, async (req, res) => {
     }
 });
 
+//Funciones encargadas de gestionar el envio de correos:
+
+app.post('/send-email', async (req, res) => {
+    try {
+        const { email, newPassword, username } = req.body;
+
+        // Validación básica
+        if (!email || !newPassword || !username) {
+            return res.status(400).send("Todos los campos son requeridos.");
+        }
+
+        // Validación adicional para email y otros campos aquí...
+
+        let transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'raimon.boixereu@spb.cat', 
+                pass: process.env.PASSORD_MAIL_SERVICE
+            }
+        });
+
+        let mailOptions = {
+            from: 'raimon.boixereu@spb.cat',
+            to: 'raimon.boixereu@spb.cat',
+            subject: 'Contraseña olvidada',
+            text: `Usuario: ${username}\nEmail: ${email}\nNueva Contraseña: ${newPassword}`
+        };
+
+        let info = await transporter.sendMail(mailOptions);
+        res.send(info);
+
+    } catch (error) {
+        // Manejo de errores
+        res.status(500).send(error.toString());
+    }
+});
 
 
 
