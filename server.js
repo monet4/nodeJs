@@ -253,9 +253,9 @@ app.get('/usuarios',timeout, async (req, res) => {
 
 // Insertar un nuevo usuario
 app.post('/usuarios',timeout, async (req, res) => {
-    const { nombre, apellido, usuario, contrasena, mail } = req.body;
+    const { nombre, apellido, usuario, contrasena, mail,admin } = req.body;
     try {
-        const [result] = await pool.query('INSERT INTO usuarios (nombre, apellido, usuario, contrasena, mail) VALUES (?, ?, ?, ?, ?)', [nombre, apellido, usuario, contrasena, mail]);
+        const [result] = await pool.query('INSERT INTO usuarios (nombre, apellido, usuario, contrasena, mail,admin) VALUES (?, ?, ?, ?, ?,?)', [nombre, apellido, usuario, contrasena, mail,admin]);
         res.json({ id: result.insertId });
     } catch (error) {
         res.status(500).json({ error: error.message });
